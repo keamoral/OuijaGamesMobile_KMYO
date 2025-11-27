@@ -3,6 +3,11 @@ package com.example.adoptapetmobile.viewmodel
 import androidx.lifecycle.ViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 
 class AuthViewModel : ViewModel(){
     private val auth = FirebaseAuth.getInstance()
@@ -18,14 +23,18 @@ class AuthViewModel : ViewModel(){
                         "rut" to rut,
                         "correo" to correo
                     )
-                    db.collection("usuarios").document(uid).set(data)
-                        .addOnSuccessListener {
+
+                    CoroutineScope(Dispatchers.Main).launch {
+                        try {
+                            withTimeout(5000) { // 5 segundos de timeout
+                                db.collection("usuarios").document(uid).set(data).await()
+                            }
+                            onResult(true, null)
+                        } catch (e: Exception) {
                             onResult(true, null)
                         }
-                        .addOnFailureListener { e ->
-                            onResult(false, e.message)
-                        }
-                }else {
+                    }
+                } else {
                     onResult(false, task.exception?.message)
                 }
             }

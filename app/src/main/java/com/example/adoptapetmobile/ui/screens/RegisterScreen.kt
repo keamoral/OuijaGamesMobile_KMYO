@@ -2,11 +2,16 @@ package com.example.adoptapetmobile.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -28,84 +33,173 @@ import com.example.adoptapetmobile.viewmodel.AuthViewModel
 import kotlinx.coroutines.delay
 
 @Composable
-fun RegisterScreen(viewModel: AuthViewModel = viewModel(), onRegistered: () -> Unit = {}, onGoLogin: () -> Unit){
+fun RegisterScreen(
+    viewModel: AuthViewModel = viewModel(),
+    onRegistered: () -> Unit = {},
+    onGoLogin: () -> Unit
+) {
     var usuario by remember { mutableStateOf("") }
     var rut by remember { mutableStateOf("") }
     var correo by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var mensaje by remember { mutableStateOf("") }
-    var registroExitoso by remember { mutableStateOf(false) }
+    var showSuccessDialog by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(false) }
+    var timeoutReached by remember { mutableStateOf(false) }
 
-    if (registroExitoso){
-
+    // Timeout de 15 segundos
+    LaunchedEffect(isLoading) {
+        if (isLoading) {
+            timeoutReached = false
+            delay(15000) // 15 segundos
+            if (isLoading) {
+                timeoutReached = true
+                isLoading = false
+                mensaje = "La conexión está tardando demasiado. Verifica tu internet e intenta nuevamente."
+            }
+        }
     }
 
     Column(
-        Modifier.fillMaxSize().padding(20.dp),
+        Modifier
+            .fillMaxSize()
+            .padding(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
-    ){
+    ) {
         Text("OuijaGames", style = MaterialTheme.typography.headlineMedium)
         Spacer(Modifier.height(20.dp))
 
-        OutlinedTextField(value = usuario, onValueChange = { usuario = it }, label = {Text("Usuario")})
-        OutlinedTextField(value = rut, onValueChange = { rut = it }, label = {Text("RUT")})
-        OutlinedTextField(value = correo, onValueChange = { correo = it }, label = {Text("Correo")})
+        OutlinedTextField(
+            value = usuario,
+            onValueChange = { usuario = it },
+            label = { Text("Usuario") },
+            enabled = !isLoading
+        )
+        OutlinedTextField(
+            value = rut,
+            onValueChange = { rut = it },
+            label = { Text("RUT") },
+            enabled = !isLoading
+        )
+        OutlinedTextField(
+            value = correo,
+            onValueChange = { correo = it },
+            label = { Text("Correo") },
+            enabled = !isLoading
+        )
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
             label = { Text("Clave") },
-            visualTransformation = PasswordVisualTransformation()
+            visualTransformation = PasswordVisualTransformation(),
+            enabled = !isLoading
         )
 
         Spacer(Modifier.height(20.dp))
 
-        Button(onClick = {
-            if(usuario.isBlank()||rut.isBlank()||correo.isBlank()||password.isBlank()){
-                mensaje = "Por favor, completa todos los campos"
-            }else{
-                viewModel.registrar(usuario, rut, correo, password) { exito, error ->
-                    mensaje = if (exito) {
-                        onGoLogin()
-                        "Registro exitoso!"
+        Button(
+            onClick = {
+                if (usuario.isBlank() || rut.isBlank() || correo.isBlank() || password.isBlank()) {
+                    mensaje = "Por favor, completa todos los campos"
+                } else {
+                    isLoading = true
+                    mensaje = ""
+                    timeoutReached = false
 
-
-                    } else {
-                        when{
-                            error?.contains("already in use", true) == true ->
-                                "El correo ingresado ya esta registrado."
-                            error?.contains("badly formatted", true) == true ->
-                                "El formato del correo no es valido."
-                            error?.contains("weak-password", true) == true||
-                                    error?.contains("WEAK_PASSWORD", true) == true ->
+                    viewModel.registrar(usuario, rut, correo, password) { exito, error ->
+                        if (!timeoutReached) {
+                            isLoading = false
+                            if (exito) {
+                                mensaje = ""
+                                showSuccessDialog = true
+                            } else {
+                                mensaje = when {
+                                    error?.contains("already in use", true) == true ->
+                                        "El correo ingresado ya esta registrado."
+                                    error?.contains("badly formatted", true) == true ->
+                                        "El formato del correo no es valido."
+                                    error?.contains("weak-password", true) == true ||
+                                            error?.contains("WEAK_PASSWORD", true) == true ->
                                         "La clave es demasiado debil. Usa al menos 6 caracteres."
-                            else -> "Error al registrar usuario. Intente nuevamente."
+                                    error?.contains("network", true) == true ->
+                                        "Error de conexión. Verifica tu internet."
+                                    else -> "Error: ${error ?: "Desconocido"}. Intenta nuevamente."
+                                }
+                            }
                         }
                     }
-
                 }
+            },
+            enabled = !isLoading,
+            modifier = Modifier.height(50.dp)
+        ) {
+            if (isLoading) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        color = Color.White,
+                        strokeWidth = 2.dp
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text("Registrando...")
+                }
+            } else {
+                Text("Registrarse")
             }
-
-        }) {
-            Text("Registrarse")
         }
 
-        if(mensaje.isNotEmpty()){
-            val colorTexto = when {
-                mensaje.contains("Error", true)||
-                        mensaje.contains("Por favor", true)||
-                        mensaje.contains("registrado", true)||
-                        mensaje.contains("valido", true)||
-                        mensaje.contains("debil", true) -> Color.Red
-                mensaje.contains("exitoso", true) -> Color(0xFF1B5E20)
-                else -> Color.Red
-            }
-            Text(mensaje, color = colorTexto, modifier = Modifier.padding(top = 10.dp))
+        if (mensaje.isNotEmpty()) {
+            Spacer(Modifier.height(12.dp))
+            Text(
+                text = mensaje,
+                color = Color.Red,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
         }
 
-
+        Spacer(Modifier.height(8.dp))
         Divider(Modifier.padding(vertical = 8.dp))
-        OutlinedButton(onClick = onGoLogin) { Text("Iniciar Sesion") }
 
+        OutlinedButton(
+            onClick = onGoLogin,
+            enabled = !isLoading
+        ) {
+            Text("Iniciar Sesion")
+        }
+    }
+
+    // Diálogo de éxito
+    if (showSuccessDialog) {
+        AlertDialog(
+            onDismissRequest = { },
+            title = {
+                Text(
+                    text = "¡Registro exitoso!",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = Color(0xFF1B5E20)
+                )
+            },
+            text = {
+                Text(
+                    text = "Tu cuenta ha sido creada correctamente.",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showSuccessDialog = false
+                        onGoLogin()
+                    }
+                ) {
+                    Text("Ir a Iniciar Sesión")
+                }
+            },
+            containerColor = MaterialTheme.colorScheme.surface
+        )
     }
 }
