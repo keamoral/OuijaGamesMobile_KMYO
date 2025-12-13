@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "233982311219",
+    "project_id": "adoptapet-6d9f9",
+    "storage_bucket": "adoptapet-6d9f9.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:233982311219:android:74f9bdfd5a022a66c35c46",
+        "android_client_info": {
+          "package_name": "com.example.adoptapetmobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB1HYlYVrparkrckyYTIm4u6JXYTVAwW9U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
