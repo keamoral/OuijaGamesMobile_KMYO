@@ -204,10 +204,8 @@ class ProductViewModel : ViewModel() {
             try {
                 val state = _formState.value
 
-                // Si hay una imagen URI seleccionada y tenemos contexto, la convertimos
+                // Si hay una imagen URI seleccionada 
                 val imageUrl = if (_selectedImageUri.value != null && context != null) {
-                    // Aquí podrías subir la imagen a un servidor y obtener la URL
-                    // Por ahora, usamos la URL del formulario o una placeholder
                     uploadImageToServer(context, _selectedImageUri.value!!)
                 } else {
                     state.img
@@ -236,17 +234,12 @@ class ProductViewModel : ViewModel() {
 
     //Función para subir imagen al servidor
     private suspend fun uploadImageToServer(context: Context, uri: Uri): String {
-        // NOTA: Esta es una implementación básica
-        // En producción, deberías usar Multipart para subir al servidor
-        // y retornar la URL real de la imagen
 
-        // Por ahora, si hay una URL en el campo img, usarla
+        // si hay una URL en el campo img
         if (_formState.value.img.isNotBlank()) {
             return _formState.value.img
         }
 
-        // Si no hay URL, convertir a File y retornar path local
-        // (esto es temporal, en producción deberías subirla a tu servidor)
         val file = uriToFile(context, uri)
         return file?.absolutePath ?: ""
     }
