@@ -44,7 +44,6 @@ fun LoginScreen(viewModel: AuthViewModel = viewModel(), onLoggedIn: () -> Unit, 
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ){
-        // NUEVO: Logo arriba del título
         Card(
             modifier = Modifier.size(120.dp),
             shape = RoundedCornerShape(16.dp),
